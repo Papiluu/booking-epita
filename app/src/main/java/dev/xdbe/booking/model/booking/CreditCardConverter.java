@@ -19,13 +19,21 @@ public class CreditCardConverter implements AttributeConverter<String, String> {
     public String convertToDatabaseColumn(String attribute) {
         return attribute;
     }
-
+    
     @Override
     public String convertToEntityAttribute(String dbData) {
-        // Step 5: Mask credit card number
-        // Insert your code here to mask credit card number        
-        return dbData;
-   }
-
-    
+        if (dbData == null) {
+            return null;
+        }
+        
+        if (dbData.length() <= 8) {
+            return dbData;
+        }
+        
+        String firstFour = dbData.substring(0, 4);
+        String lastFour = dbData.substring(dbData.length() - 4);
+        String masked = "*".repeat(dbData.length() - 8);
+        
+        return firstFour + masked + lastFour;
+    }
 }

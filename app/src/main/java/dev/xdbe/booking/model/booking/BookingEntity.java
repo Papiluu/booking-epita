@@ -19,8 +19,8 @@ public class BookingEntity {
     private String name;
 
     // Step 5: add annotation
+    @Convert(converter = CreditCardConverter.class)
     private String creditCardNumber;
-
     // Getters and Setters
 
     public Long getId() {
