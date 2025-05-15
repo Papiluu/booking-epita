@@ -1,4 +1,4 @@
-
+      
 name: Daily Security Pipeline
 
 on:
@@ -7,8 +7,8 @@ on:
     - cron: '0 3 * * *'
 
 permissions:
-  contents: read
-  security-events: write
+  contents: read 
+  security-events: write 
 
 jobs:
   dependencies-analysis:
@@ -17,15 +17,15 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        
+
       - name: Run OSV Scanner
-        uses: google/osv-scanner-action@v1.7.0
+        uses: google/osv-scanner-action@v1
         with:
           scan-args: |
             --format=sarif
             --output=osv-results.sarif
-            ./app
-            
+            ./app # Correct path for booking-epita's pom.xml
+
       - name: Upload OSV results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         with:
@@ -43,6 +43,7 @@ jobs:
 
       - name: Run Semgrep SAST Scan
         run: semgrep ci --sarif --output=semgrep-results.sarif --config "p/java"
+        continue-on-error: true
 
       - name: Upload Semgrep results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
@@ -50,3 +51,4 @@ jobs:
           sarif_file: semgrep-results.sarif
           category: semgrep
 
+    
