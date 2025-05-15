@@ -1,0 +1,52 @@
+
+name: Daily Security Pipeline
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * *'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  dependencies-analysis:
+    name: Dependencies Analysis (OSV)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Run OSV Scanner
+        uses: google/osv-scanner-action@v1.7.0
+        with:
+          scan-args: |
+            --format=sarif
+            --output=osv-results.sarif
+            ./app
+            
+      - name: Upload OSV results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: osv-results.sarif
+          category: osv-scanner
+
+  source-code-analysis:
+    name: Source Code Analysis (Semgrep)
+    runs-on: ubuntu-latest
+    container:
+      image: returntocorp/semgrep
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep SAST Scan
+        run: semgrep ci --sarif --output=semgrep-results.sarif --config "p/java"
+
+      - name: Upload Semgrep results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep-results.sarif
+          category: semgrep
+
