@@ -1,54 +1,51 @@
-      
-name: Daily Security Pipeline
+name: Security Scan
 
 on:
-  workflow_dispatch:
   schedule:
-    - cron: '0 3 * * *'
-
-permissions:
-  contents: read 
-  security-events: write 
+    - cron: '0 0 * * *'
+  workflow_dispatch:  
 
 jobs:
-  dependencies-analysis:
-    name: Dependencies Analysis (OSV)
+  DependenciesAnalysis:
+    permissions:
+      security-events: write
+    name: DependenciesAnalysis
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Run OSV Scanner
-        uses: google/osv-scanner-action@v1
+        uses: google/osv-scanner-action/osv-scanner-action@v2.0.2
         with:
           scan-args: |
+            --lockfile=app/gradle.lockfile
             --format=sarif
             --output=osv-results.sarif
-            ./app # Correct path for booking-epita's pom.xml
+        continue-on-error: true
 
-      - name: Upload OSV results to GitHub Security tab
+      - name: Upload SARIF report
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: osv-results.sarif
-          category: osv-scanner
 
-  source-code-analysis:
-    name: Source Code Analysis (Semgrep)
+  SourceCodeAnalysis:
+    permissions:
+      security-events: write
+    name: SourceCodeAnalysis
     runs-on: ubuntu-latest
     container:
       image: returntocorp/semgrep
+
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Run Semgrep SAST Scan
-        run: semgrep ci --sarif --output=semgrep-results.sarif --config "p/java"
-        continue-on-error: true
+      - name: Run Semgrep for Java
+        run: semgrep --config=p/java --sarif --output=semgrep.sarif
 
-      - name: Upload Semgrep results to GitHub Security tab
+      - name: Upload SARIF report
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: semgrep-results.sarif
-          category: semgrep
-
-    
+          sarif_file: semgrep.sarif
